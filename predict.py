@@ -6,6 +6,7 @@ import torch
 from cog import BasePredictor, Input, Path
 from modelscope import snapshot_download
 import ChatTTS
+import soundfile as sf
 import time
 
 # The ChatTTS model setup
@@ -13,14 +14,12 @@ MODEL_DIR="models"
 CHATTTS_DIR = snapshot_download('pzc163/chatTTS', cache_dir=MODEL_DIR)
 chat = ChatTTS.Chat()
 chat.load_models(source="local", local_path=CHATTTS_DIR)
-# std and mean global variables
-std, mean = torch.load(f'{CHATTTS_DIR}/asset/spk_stat.pt').chunk(2)
 
 class Predictor(BasePredictor):
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
-        pass  # No setup needed as everything is loaded globally
-
+        self.std, self.mean = torch.load(f'{CHATTTS_DIR}/asset/spk_stat.pt').chunk(2)
+    
     @torch.inference_mode()
     def predict(self,
                 text: str = Input(description="Text to be synthesized", default="Hello world!"),
@@ -31,50 +30,55 @@ class Predictor(BasePredictor):
                 top_p: float = Input(description="Top-p sampling parameter", default=0.7),
                 top_k: int = Input(description="Top-k sampling parameter", default=20),
                 prompt: str = Input(description="Prompt for refining text", default=''),
-    ) -> dict:
-        rand_spk = chat.sample_random_speaker()
-        torch.manual_seed(voice)
+    ) -> Path:
+        if custom_voice > 0:
+            voice = custom_voice
         
-        # Generate a filename based on input parameters
+        torch.manual_seed(voice)
+        rand_spk = chat.sample_random_speaker()
+        
+        # Calculate the file hash
         md5_hash = hashlib.md5()
-        request_signature = f"{text}-{voice}-{skip_refine}-{prompt}"
-        md5_hash.update(request_signature.encode('utf-8'))
+        md5_hash.update(f"{text}-{voice}-{skip_refine}-{prompt}".encode('utf-8'))
         datename = datetime.datetime.now().strftime('%Y%m%d-%H_%M_%S')
         filename = datename + '-' + md5_hash.hexdigest() + ".wav"
-        filePath = Path(filename)
-        # Perform TTS inference
+        
+        # Inference
         start_time = time.time()
+        
         wavs = chat.infer(
             [t for t in text.split("\n") if t.strip()],
             use_decoder=True,
-            skip_refine_text=bool(skip_refine),
-            params_infer_code={
-                'spk_emb': rand_spk,
-                'temperature': temperature,
-                'top_P': top_p,
-                'top_K': top_k
-            },
+            skip_refine_text=True if int(skip_refine) == 1 else False,
+            params_infer_code={'spk_emb': rand_spk, 'temperature': temperature, 'top_P': top_p, 'top_K': top_k},
             params_refine_text={'prompt': prompt},
             do_text_normalization=False
         )
+        
         end_time = time.time()
         inference_time = round(end_time - start_time, 2)
-
-        # Combine wav files
-        combined_wavdata = np.concatenate([wavdata[0] for wavdata in wavs])
-        sample_rate = 24000
+        
+        combined_wavdata = np.concatenate([wav[0] for wav in wavs])
+        
+        sample_rate = 24000  # Assuming 24kHz sample rate
         audio_duration = round(len(combined_wavdata) / sample_rate, 2)
-
+        
+        # Save the resulting WAV file
+        output_path = Path("/tmp") / filename
+        sf.write(output_path, combined_wavdata, sample_rate)
+        
         # Create response dict
         response = {
             "code": 0,
             "msg": "ok",
             "audio_files": [{
                 "filename": filename,
-                "audio_data": filePath,
+                "audio_data": str(output_path),
+                "output_path": output_path,
                 "inference_time": inference_time,
                 "audio_duration": audio_duration
             }]
         }
         
+        # Return the path of the generated audio file
         return response
