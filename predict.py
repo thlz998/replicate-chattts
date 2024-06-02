@@ -4,10 +4,12 @@ import datetime
 import numpy as np
 import torch
 import soundfile as sf
-from cog import BasePredictor, Input, Path
+from cog import BasePredictor, Input
 from modelscope import snapshot_download
 import ChatTTS
 import time
+import base64
+from io import BytesIO
 
 # The ChatTTS model setup
 MODEL_DIR="models"
@@ -70,17 +72,18 @@ class Predictor(BasePredictor):
         sample_rate = 24000
         audio_duration = round(len(combined_wavdata) / sample_rate, 2)
 
-        # Save combined wav file
-        output_path = os.path.join(WAVS_DIR, filename)
-        sf.write(output_path, combined_wavdata, sample_rate)
-
+        # Convert audio data to Base64
+        buffer = BytesIO()
+        sf.write(buffer, combined_wavdata, sample_rate, format='WAV')
+        encoded_audio = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        
         # Create response dict
         response = {
             "code": 0,
             "msg": "ok",
             "audio_files": [{
-                "filename": output_path,
-                "url": f"file://{output_path}",
+                "filename": filename,
+                "audio_data": encoded_audio,
                 "inference_time": inference_time,
                 "audio_duration": audio_duration
             }]
