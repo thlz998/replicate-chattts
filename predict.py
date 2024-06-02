@@ -28,7 +28,12 @@ class Predictor(BasePredictor):
     @torch.inference_mode()
     def predict(self,
                 text: str = Input(description="Text to be synthesized", default="Hello world!"),
-                voice: int = Input(description="Voice identifier", default=2222, ge=0),
+                voice: int = Input(
+                    description="Voice identifier",
+                    default=2222,
+                    ge=0,
+                    choices=[2222, 7869, 6653, 4099, 5099],
+                ),
                 custom_voice: int = Input(description="Custom voice identifier", default=0, ge=0),
                 skip_refine: int = Input(description="Skip refine text step", default=0, choices=[0, 1]),
                 temperature: float = Input(description="Temperature for sampling", default=0.3, ge=0.0, le=1.0),
