@@ -9,5 +9,13 @@ build:
     - "cog"
     - "modelscope"
     - "datetime"
+    - "ipython"
+    - "omegaconf"
+    - "python-dotenv"
+    - "tokenizers"
+    - "transformers"
+    - "vector-quantize-pytorch"
+    - "vocos"
+    - "waitress"
 
 predict: "predict.py:Predictor"
