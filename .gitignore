@@ -1,5 +1,5 @@
 .cog/
 __pycache__/
 diffusers-cache/
-predict-temp.py
 .vscode
+predict-temp*.py
