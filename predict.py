@@ -1,9 +1,17 @@
-import os
-import torch
 import hashlib
+import os
 import datetime
 import numpy as np
+
+torch._dynamo.config.suppress_errors = True
+torch._dynamo.config.cache_size_limit = 64
+torch._dynamo.config.suppress_errors = True
+torch.set_float32_matmul_precision('high')
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
 from cog import BasePredictor, Input, Path
+import torch
+import torch._dynamo
 import ChatTTS
 import time
 import soundfile as sf
