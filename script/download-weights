@@ -13,7 +13,6 @@ import datetime
 import numpy as np
 from cog import BasePredictor, Input, Path
 import ChatTTS
-import soundfile as sf
 import time
 
 # Constants
@@ -77,7 +76,7 @@ class Predictor(BasePredictor):
         
         # Save the resulting WAV file
         output_path = Path("/tmp") / filename
-        sf.write(str(output_path), combined_wavdata, sample_rate)
+        # sf.write(str(output_path), combined_wavdata, sample_rate)
         
         # Create response dict
         response = {
@@ -85,7 +84,7 @@ class Predictor(BasePredictor):
             "msg": "ok",
             "audio_files": [{
                 "filename": filename,
-                "audio_data": str(output_path),
+                "audio_data": output_path,
                 "inference_time": inference_time,
                 "audio_duration": audio_duration
             }]
