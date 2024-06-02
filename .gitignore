@@ -3,3 +3,5 @@ __pycache__/
 diffusers-cache/
 .vscode
 predict-temp*.py
+models/
+*.wav
