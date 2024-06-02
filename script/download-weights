@@ -1,31 +1,30 @@
-
 #!/usr/bin/env python
 
 import os
-import shutil
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+from pathlib import Path
 from modelscope import snapshot_download
-import ChatTTS
 
-# Define MODEL_CACHE
-MODEL_CACHE = "models"
-MODEL_ID = 'pzc163/chatTTS'
+# 设置模型下载目录
+def get_executable_path():
+    if getattr(sys, 'frozen', False):
+        return Path(sys.executable).parent.as_posix()
+    else:
+        return Path.cwd().as_posix()
 
-if os.path.exists(MODEL_CACHE):
-    shutil.rmtree(MODEL_CACHE)
-os.makedirs(MODEL_CACHE, exist_ok=True)
+ROOT_DIR = get_executable_path()
 
-def download_and_cache_model(model_id, cache_dir):
-    print(f"Downloading and caching model {model_id} to {cache_dir}")
-    snapshot_download(model_id, cache_dir=cache_dir)
+MODEL_DIR_PATH = Path(ROOT_DIR + "/models")
+MODEL_DIR_PATH.mkdir(parents=True, exist_ok=True)
+MODEL_DIR = MODEL_DIR_PATH.as_posix()
 
-    print("Loading ChatTTS model for initialization")
-    chat = ChatTTS.Chat()
-    chat.load_models(source="local", local_path=cache_dir)
-
-    print("Downloaded and cached TTS models successfully")
+def download_model():
+    try:
+        # 从 ModelScope 下载模型
+        CHATTTS_DIR = snapshot_download('pzc163/chatTTS', cache_dir=MODEL_DIR)
+        print(f"模型下载成功，保存在 {CHATTTS_DIR}")
+    except Exception as e:
+        print(f"模型下载失败: {e}")
 
 if __name__ == "__main__":
-    download_and_cache_model(MODEL_ID, MODEL_CACHE)
+    download_model()
