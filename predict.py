@@ -25,20 +25,7 @@ class Predictor(BasePredictor):
         CHATTTS_DIR = snapshot_download('pzc163/chatTTS', cache_dir=MODEL_DIR)
         self.chat = ChatTTS.Chat()
         self.chat.load_models(source="local", local_path=CHATTTS_DIR)
-        # 启动后初始化
-        self.chat.infer(
-            [t for t in "hello".split("\n") if t.strip()],
-            use_decoder=True,
-            skip_refine_text=bool(0),
-            params_infer_code={
-                'spk_emb':  self.chat.sample_random_speaker(),
-                'temperature': 0.3,
-                'top_P': 0.7,
-                'top_K': 20
-            },
-            params_refine_text={'prompt': ""},
-            do_text_normalization=False
-        )
+        print("模型加载成功，初始化完成")
     @torch.inference_mode()
     def predict(self,
                 text: str = Input(description="Text to be synthesized", default="Hello world!"),
