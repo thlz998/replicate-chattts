@@ -82,4 +82,4 @@ class Predictor(BasePredictor):
             "inference_time": inference_time_rounded,
             "audio_duration": audio_duration_rounded
         })
-        return audio_files
+        return {"audio_files": audio_files}
