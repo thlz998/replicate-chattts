@@ -8,13 +8,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from modelscope import snapshot_download
 from ChatTTS import Chat
 
-from predict import MODEL_DIR, CHATTTS_ID
+from predict import MODEL_DIR
 
 if os.path.exists(MODEL_DIR):
     shutil.rmtree(MODEL_DIR)
 os.makedirs(MODEL_DIR, exist_ok=True)
 
-CHATTTS_DIR = snapshot_download(CHATTTS_ID, cache_dir=MODEL_DIR)
+CHATTTS_DIR = snapshot_download("pzc163/chatTTS", cache_dir=MODEL_DIR)
 
 chat = Chat()
 chat.load_models(source='local', local_path=CHATTTS_DIR)
