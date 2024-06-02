@@ -41,49 +41,55 @@ class Predictor(BasePredictor):
     ) -> dict:
         if custom_voice > 0:
             voice = custom_voice
+        print(f'{voice=},{custom_voice=}')
+
 
         torch.manual_seed(voice)
+        
         rand_spk = self.chat.sample_random_speaker()
 
-        # Calculate the file hash
+        audio_files = []
         md5_hash = hashlib.md5()
         md5_hash.update(f"{text}-{voice}-{skip_refine}-{prompt}".encode('utf-8'))
-        datename = datetime.datetime.now().strftime('%Y%m%d-%H_%M_%S')
-        filename = datename + '-' + md5_hash.hexdigest() + ".wav"
-
-        # Inference
+        datename=datetime.datetime.now().strftime('%Y%m%d-%H_%M_%S')
+        filename = datename+'-'+md5_hash.hexdigest() + ".wav"
         start_time = time.time()
 
+        
         wavs = self.chat.infer(
             [t for t in text.split("\n") if t.strip()],
             use_decoder=True,
             skip_refine_text=True if int(skip_refine) == 1 else False,
-            params_infer_code={'spk_emb': rand_spk, 'temperature': temperature, 'top_P': top_p, 'top_K': top_k},
+            params_infer_code={
+                'spk_emb': rand_spk,
+                'temperature': temperature,
+                'top_P': top_p,
+                'top_K': top_k
+            },
             params_refine_text={'prompt': prompt},
             do_text_normalization=False
         )
 
         end_time = time.time()
-        inference_time = round(end_time - start_time, 2)
+        inference_time = end_time - start_time
+        inference_time_rounded = round(inference_time, 2)
+        print(f"推理时长: {inference_time_rounded} 秒")
 
-        combined_wavdata = np.concatenate([wav[0] for wav in wavs])
+        combined_wavdata = np.array([], dtype=wavs[0][0].dtype)  # 确保dtype与你的wav数据类型匹配
 
-        sample_rate = 24000
-        audio_duration = round(len(combined_wavdata) / sample_rate, 2)
+        for wavdata in wavs:
+            combined_wavdata = np.concatenate((combined_wavdata, wavdata[0]))
 
-        # Save the resulting WAV file
-        output_path = Path("/tmp") / filename
-        sf.write(output_path, combined_wavdata, sample_rate)
 
-        response = {
-            "code": 0,
-            "msg": "ok",
-            "audio_files": [{
-                "filename": filename,
-                "audio_data": output_path,
-                "inference_time": inference_time,
-                "audio_duration": audio_duration
-            }]
-        }
+        sample_rate = 24000  # Assuming 24kHz sample rate
+        audio_duration = len(combined_wavdata) / sample_rate
+        audio_duration_rounded = round(audio_duration, 2)
+        print(f"音频时长: {audio_duration_rounded} 秒")
 
-        return response
+        sf.write(filename, combined_wavdata, 24000)
+        audio_files.append({
+            "filename": Path(filename),
+            "inference_time": inference_time_rounded,
+            "audio_duration": audio_duration_rounded
+        })
+        return audio_files
