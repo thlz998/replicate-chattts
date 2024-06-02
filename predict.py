@@ -3,14 +3,10 @@ import hashlib
 import datetime
 import numpy as np
 import torch
-import soundfile as sf
-from io import BytesIO
-from cog import BasePredictor, Input
+from cog import BasePredictor, Input, Path
 from modelscope import snapshot_download
 import ChatTTS
 import time
-import base64
-from pathlib import Path
 
 # The ChatTTS model setup
 MODEL_DIR="models"
@@ -19,10 +15,6 @@ chat = ChatTTS.Chat()
 chat.load_models(source="local", local_path=CHATTTS_DIR)
 # std and mean global variables
 std, mean = torch.load(f'{CHATTTS_DIR}/asset/spk_stat.pt').chunk(2)
-
-WAVS_DIR_PATH = Path("wavs")
-WAVS_DIR_PATH.mkdir(parents=True, exist_ok=True)
-WAVS_DIR = WAVS_DIR_PATH.as_posix()
 
 class Predictor(BasePredictor):
     def setup(self):
@@ -49,7 +41,7 @@ class Predictor(BasePredictor):
         md5_hash.update(request_signature.encode('utf-8'))
         datename = datetime.datetime.now().strftime('%Y%m%d-%H_%M_%S')
         filename = datename + '-' + md5_hash.hexdigest() + ".wav"
-        
+        filePath = Path(filename)
         # Perform TTS inference
         start_time = time.time()
         wavs = chat.infer(
@@ -73,19 +65,13 @@ class Predictor(BasePredictor):
         sample_rate = 24000
         audio_duration = round(len(combined_wavdata) / sample_rate, 2)
 
-        # Convert audio data to Base64
-        buffer = BytesIO()
-        sf.write(buffer, combined_wavdata, sample_rate, format='WAV')
-        buffer.seek(0)
-        encoded_audio = base64.b64encode(buffer.read()).decode('utf-8')
-
         # Create response dict
         response = {
             "code": 0,
             "msg": "ok",
             "audio_files": [{
                 "filename": filename,
-                "audio_data": encoded_audio,
+                "audio_data": filePath,
                 "inference_time": inference_time,
                 "audio_duration": audio_duration
             }]
