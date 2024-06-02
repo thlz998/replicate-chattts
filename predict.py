@@ -6,7 +6,7 @@ import numpy as np
 from cog import BasePredictor, Input, Path
 import ChatTTS
 import time
-import soundfile as sf  # Ensure to import soundfile for saving audio
+import soundfile as sf
 
 # Constants
 MODEL_DIR = "models"
@@ -15,10 +15,15 @@ MODEL_PATH = os.path.join(MODEL_DIR, 'asset/spk_stat.pt')
 # Check if model files exist
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError(f"Model files not found at {MODEL_DIR}. Please ensure the model files are present.")
+else:
+    print(f"Model file found at {MODEL_PATH}")
 
 class Predictor(BasePredictor):
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
+        if not os.path.exists(MODEL_PATH):
+            raise FileNotFoundError(f"Model files not found at {MODEL_DIR}. Please ensure the model files are present.")
+        print("Loading model from", MODEL_PATH)
         self.std, self.mean = torch.load(MODEL_PATH).chunk(2)
         self.chat = ChatTTS.Chat()
         self.chat.load_models(source="local", local_path=MODEL_DIR)
@@ -63,20 +68,19 @@ class Predictor(BasePredictor):
 
         combined_wavdata = np.concatenate([wav[0] for wav in wavs])
 
-        sample_rate = 24000  # Assuming 24kHz sample rate
+        sample_rate = 24000
         audio_duration = round(len(combined_wavdata) / sample_rate, 2)
 
         # Save the resulting WAV file
         output_path = Path("/tmp") / filename
-        sf.write(output_path, combined_wavdata, sample_rate)  # Save audio data to output path
+        sf.write(output_path, combined_wavdata, sample_rate)
 
-        # Create response dict
         response = {
             "code": 0,
             "msg": "ok",
             "audio_files": [{
                 "filename": filename,
-                "audio_data": str(output_path),  # Ensure this is a string path
+                "audio_data": output_path,
                 "inference_time": inference_time,
                 "audio_duration": audio_duration
             }]
