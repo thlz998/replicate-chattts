@@ -2,26 +2,19 @@
 
 import os
 import shutil
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from modelscope import snapshot_download
-import ChatTTS
+from ChatTTS import Chat
 
-# Define MODEL_CACHE
-MODEL_CACHE = "models"
-MODEL_ID = 'pzc163/chatTTS'
+from predict import MODEL_DIR, CHATTTS_ID
 
-if os.path.exists(MODEL_CACHE):
-    shutil.rmtree(MODEL_CACHE)
-os.makedirs(MODEL_CACHE, exist_ok=True)
+if os.path.exists(MODEL_DIR):
+    shutil.rmtree(MODEL_DIR)
+os.makedirs(MODEL_DIR, exist_ok=True)
 
-def download_and_cache_model(model_id, cache_dir):
-    print(f"Downloading and caching model {model_id} to {cache_dir}")
-    snapshot_download(model_id, cache_dir=cache_dir)
+CHATTTS_DIR = snapshot_download(CHATTTS_ID, cache_dir=MODEL_DIR)
 
-    print("Loading ChatTTS model for initialization")
-    chat = ChatTTS.Chat()
-    chat.load_models(source="local", local_path=cache_dir)
-    
-    print("Downloaded and cached TTS models successfully")
-
-if __name__ == "__main__":
-    download_and_cache_model(MODEL_ID, MODEL_CACHE)
+chat = Chat()
+chat.load_models(source='local', local_path=CHATTTS_DIR)
