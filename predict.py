@@ -7,26 +7,16 @@ from cog import BasePredictor, Input, Path
 import ChatTTS
 import time
 import soundfile as sf
+from modelscope import snapshot_download
 
 # Constants
-MODEL_DIR = "models"
-MODEL_PATH = os.path.join(MODEL_DIR, 'asset/spk_stat.pt')
-
-# Check if model files exist
-if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(f"Model files not found at {MODEL_DIR}. Please ensure the model files are present.")
-else:
-    print(f"Model file found at {MODEL_PATH}")
-
 class Predictor(BasePredictor):
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
-        if not os.path.exists(MODEL_PATH):
-            raise FileNotFoundError(f"Model files not found at {MODEL_DIR}. Please ensure the model files are present.")
-        print("Loading model from", MODEL_PATH)
-        self.std, self.mean = torch.load(MODEL_PATH).chunk(2)
+        MODEL_DIR = "models"
+        CHATTTS_DIR = snapshot_download('pzc163/chatTTS', cache_dir=MODEL_DIR)
         self.chat = ChatTTS.Chat()
-        self.chat.load_models(source="local", local_path=MODEL_DIR)
+        self.chat.load_models(source="local", local_path=CHATTTS_DIR)
 
     @torch.inference_mode()
     def predict(self,
