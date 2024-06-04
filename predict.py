@@ -18,6 +18,9 @@ from modelscope import snapshot_download
 
 
 # Constants
+MODEL_DIR = "models"
+
+
 class Predictor(BasePredictor):
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
